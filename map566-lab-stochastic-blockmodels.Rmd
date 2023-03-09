@@ -1,0 +1,94 @@
+---
+title: " Graph Clustering: Stochastic Blockmodels"
+subtitle: "An illustration on antogonistic tree/fungus network"
+---
+
+##  Introduction
+
+This tutorial introduces the model-based approaches, namely, stochastic blockmodels (binary, weighted, bipartite, w/o covariates)
+
+These methods will be illustrated for the analysis of an (ecological) network data set.
+
+###  Requirements
+
+The packages required for the analysis are `sbm` and `igraph`, plus some others for data manipulation and representation. 
+
+```{r packages, message=FALSE, warning=FALSE}
+library(igraph)    # graph manipulation
+library(sbm)       # stochastic bloc model
+library(tidyverse) # data manipulation
+library(aricode)   # clustering measures comparison
+library(corrplot)  # plot of covariance/correlation matrices
+```
+
+::: {.callout-info}
+## Advice
+
+*Use the documentation of the aforementioned packages!!*, and the vignettes available at [https://grosssbm.github.io/sbm/](https://grosssbm.github.io/sbm/)
+
+:::
+
+### Data set: antagonistic tree/fungus interaction network
+
+![Fungus on tree](Tree-Fungus.jpg){width=150px} 
+
+We consider the fungus-tree interaction network studied by @tree_fungus_network, available with the package **sbm**:
+
+```{r import dataset}
+data("fungusTreeNetwork")
+str(fungusTreeNetwork,  max.level = 1)
+```
+
+This data set provides information about $154$ fungi sampled on $51$ tree species. It is a list with the following entries:
+
+- `tree_names` : list of the tree species names
+- `fungus_names`: list of the fungus species names
+- `tree_tree` : weighted tree-tree interactions (number of common fungal species two tree species host)
+- `fungus_tree` : binary fungus-tree interactions
+- `covar_tree` : covariates associated to pairs of trees (namely genetic, taxonomic and geographic distances)
+
+During this tutorial we are going to explore successive variants of the Stochastic Blockmodels to analyse binary, weighted, then bipartite network, also by introducing external information via covariates.
+
+## Analysis of the tree/tree data
+
+The tree-tree interactions result into a simple network.
+
+### Weighted interaction network with Poisson model
+
+We consider the weighted network where the link between two trees is the number of fungi they share.
+
+$$
+\begin{aligned}
+ (Z_i) \text{ i.i.d.} \qquad & Z_i \sim \mathcal{M}(1, \pi) \\
+ (Y_{ij}) \text{ indep.} \mid (Z_i) \qquad & (Y_{ij} \mid Z_i=k, Z_j = \ell) \sim \mathcal{P}(\exp(\alpha_{kl})) = \mathcal{P}(\lambda_{kl})
+\end{aligned}
+$$
+
+1. Remove the isolates node from the weighted adjacency matrix (with degree equal to 0)
+
+2. Adjust a collection of Poisson SBM and select the best model accoriding to ICL.
+
+3. Adjust the spectral clustering (coded last time) and modularity-based hierarchical (`igraph::cluster_fast_greedy`) clustering methods
+
+4. Compare spectral, hierarchical clustering and Poisson SBM with ARI/NID (package `aricode`) and alluvial plots (`plotAlluvial`) (chose the number of block selected by the Poisson SBM).
+
+### Including covariate effects
+
+We have on each pair of trees 3 covariates, namely the genetic distance, the taxonomic
+distance and the geographic distance.
+
+Each covariate has to be introduced as a  matrix: $X^k_{ij}$ corresponds to the value of the $k$-th covariate describing the couple $(i,j)$.
+
+$$
+Z_i \sim^{\text{iid}} \mathcal{M}(1, \alpha) \\
+Y_{ij} \mid Z_i=k, Z_j = \ell \sim \mathcal{P}(\exp(\pi_{kl} + x_{ij}^\intercal \theta)) = \mathcal{P}(\gamma_{kl}\exp(x_{ij}^\top \theta))
+$$
+
+**Questions**
+
+1. Remove the isolated nodes in the matrices of covariates (use the same ones as in the graph).
+
+2. Adjust a Poisson SBM with covariates (1, 2, all of them). Use ICL to select the best model.
+
+3. Compare the obtained clustering with ARI/NID and alluvial plots of your final model with the model without covariates. 
+
